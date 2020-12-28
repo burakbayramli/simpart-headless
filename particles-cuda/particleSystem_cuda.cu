@@ -12,22 +12,13 @@
 // This file contains C wrappers around the some of the CUDA API and the
 // kernel functions so that they can be called from "particleSystem.cpp"
 
-#if defined(__APPLE__) || defined(MACOSX)
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#include <GLUT/glut.h>
-#else
 #include <GL/freeglut.h>
-#endif
-
 #include <cstdlib>
 #include <cstdio>
 #include <string.h>
-
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
-
 #include <helper_cuda.h>
-
 #include <helper_functions.h>
 #include "thrust/device_ptr.h"
 #include "thrust/for_each.h"

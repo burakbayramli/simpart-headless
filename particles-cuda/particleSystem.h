@@ -38,7 +38,6 @@ public:
     void update(float deltaTime);
     void reset(ParticleConfig config);
 
-    float *getArray(ParticleArray array);
     void   setArray(ParticleArray array, const float *data, int start, int count);
 
     int    getNumParticles() const
@@ -50,10 +49,6 @@ public:
     {
 	return m_posVbo;
     }
-    unsigned int getColorBuffer()       const
-    {
-	return m_colorVBO;
-    }
 
     void *getCudaPosVBO()              const
     {
@@ -64,7 +59,6 @@ public:
 	return (void *)m_cudaColorVBO;
     }
 
-    void dumpGrid();
     void dumpParticles();
 
     void setIterations(int i)

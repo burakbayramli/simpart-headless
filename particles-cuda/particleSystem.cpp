@@ -170,37 +170,6 @@ ParticleSystem::_initialize(int numParticles)
     allocateArray((void **)&m_dCellStart, m_numGridCells*sizeof(uint));
     allocateArray((void **)&m_dCellEnd, m_numGridCells*sizeof(uint));
 
-    if (m_bUseOpenGL)
-    {
-        m_colorVBO = createVBO(m_numParticles*4*sizeof(float));
-        registerGLBufferObject(m_colorVBO, &m_cuda_colorvbo_resource);
-
-        // fill color buffer
-        glBindBuffer(GL_ARRAY_BUFFER, m_colorVBO);
-        float *data = (float *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-        float *ptr = data;
-
-        for (uint i=0; i<m_numParticles; i++)
-        {
-            float t = i / (float) m_numParticles;
-#if 0
-            *ptr++ = rand() / (float) RAND_MAX;
-            *ptr++ = rand() / (float) RAND_MAX;
-            *ptr++ = rand() / (float) RAND_MAX;
-#else
-            colorRamp(t, ptr);
-            ptr+=3;
-#endif
-            *ptr++ = 1.0f;
-        }
-
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-    }
-    else
-    {
-        checkCudaErrors(cudaMalloc((void **)&m_cudaColorVBO, sizeof(float)*numParticles*4));
-    }
-
     sdkCreateTimer(&m_timer);
 
     setParameters(&m_params);
@@ -300,30 +269,6 @@ ParticleSystem::update(float deltaTime)
     }
 }
 
-void
-ParticleSystem::dumpGrid()
-{
-    // dump grid information
-    copyArrayFromDevice(m_hCellStart, m_dCellStart, 0, sizeof(uint)*m_numGridCells);
-    copyArrayFromDevice(m_hCellEnd, m_dCellEnd, 0, sizeof(uint)*m_numGridCells);
-    uint maxCellSize = 0;
-
-    for (uint i=0; i<m_numGridCells; i++)
-    {
-        if (m_hCellStart[i] != 0xffffffff)
-        {
-            uint cellSize = m_hCellEnd[i] - m_hCellStart[i];
-
-            //            printf("cell: %d, %d particles\n", i, cellSize);
-            if (cellSize > maxCellSize)
-            {
-                maxCellSize = cellSize;
-            }
-        }
-    }
-
-    printf("maximum particles per cell = %d\n", maxCellSize);
-}
 
 void
 ParticleSystem::dumpParticles()
@@ -346,35 +291,6 @@ ParticleSystem::dumpParticles()
 
 }
 
-
-float *
-ParticleSystem::getArray(ParticleArray array)
-{
-    assert(m_bInitialized);
-
-    float *hdata = 0;
-    float *ddata = 0;
-    struct cudaGraphicsResource *cuda_vbo_resource = 0;
-
-    switch (array)
-    {
-        default:
-        case POSITION:
-            hdata = m_hPos;
-            ddata = m_dPos;
-            cuda_vbo_resource = m_cuda_posvbo_resource;
-            break;
-
-        case VELOCITY:
-            hdata = m_hVel;
-            ddata = m_dVel;
-            break;
-    }
-
-    copyArrayFromDevice(hdata, ddata, &cuda_vbo_resource, m_numParticles*4*sizeof(float));
-    return hdata;
-}
-
 void
 ParticleSystem::setArray(ParticleArray array, const float *data, int start, int count)
 {
@@ -387,7 +303,6 @@ ParticleSystem::setArray(ParticleArray array, const float *data, int start, int 
             {
                 if (m_bUseOpenGL)
                 {
-		    std::cout << "setArray f1" << std::endl;
                     unregisterGLBufferObject(m_cuda_posvbo_resource);
                     glBindBuffer(GL_ARRAY_BUFFER, m_posVbo);
                     glBufferSubData(GL_ARRAY_BUFFER, start*4*sizeof(float), count*4*sizeof(float), data);
@@ -396,7 +311,6 @@ ParticleSystem::setArray(ParticleArray array, const float *data, int start, int 
                 }
                 else
                 {
-		    std::cout << "setArray f2" << std::endl;
                     copyArrayToDevice(m_cudaPosVBO, data, start*4*sizeof(float), count*4*sizeof(float));
                 }
             }
