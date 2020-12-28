@@ -255,7 +255,6 @@ ParticleSystem::dumpParticles()
     uint count = 16384;
     // debug
     copyArrayFromDevice(m_hPos, 0, &m_cuda_posvbo_resource, sizeof(float)*4*count);
-    copyArrayFromDevice(m_hVel, m_dVel, 0, sizeof(float)*4*count);
         
     for (uint i=start; i<start+count; i++)
     {
