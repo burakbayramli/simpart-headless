@@ -61,11 +61,6 @@ public:
 
     void dumpParticles();
 
-    void setIterations(int i)
-    {
-	m_solverIterations = i;
-    }
-
     void setDamping(float x)
     {
 	m_params.globalDamping = x;
@@ -176,7 +171,6 @@ protected: // data
 
     StopWatchInterface *m_timer;
 
-    uint m_solverIterations;
 };
 
 #endif // __PARTICLESYSTEM_H__

@@ -44,8 +44,7 @@ ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenG
     m_dPos(0),
     m_dVel(0),
     m_gridSize(gridSize),
-    m_timer(NULL),
-    m_solverIterations(1)
+    m_timer(NULL)
 {
     m_numGridCells = m_gridSize.x*m_gridSize.y*m_gridSize.z;
     //    float3 worldSize = make_float3(2.0f, 2.0f, 2.0f);

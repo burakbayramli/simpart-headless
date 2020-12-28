@@ -112,7 +112,6 @@ void initGL(int *argc, char **argv)
 
 void step()
 {
-    psystem->setIterations(iterations);
     psystem->setDamping(damping);
     psystem->setGravity(-gravity);
     psystem->setCollideSpring(collideSpring);
