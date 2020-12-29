@@ -1,15 +1,3 @@
-/*
- * Copyright 1993-2015 NVIDIA Corporation.  All rights reserved.
- *
- * Please refer to the NVIDIA end user license agreement (EULA) associated
- * with this source code for terms and conditions that govern your use of
- * this software. Any use, reproduction, disclosure, or distribution of
- * this software and related documentation outside the terms of the EULA
- * is strictly prohibited.
- *
- */
-
-// OpenGL Graphics includes
 #define HELPERGL_EXTERN_GL_FUNC_IMPLEMENTATION
 #include <helper_gl.h>
 
@@ -35,9 +23,7 @@
 #define CUDART_PI_F         3.141592654f
 #endif
 
-ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenGL) :
-    m_bInitialized(false),
-    m_bUseOpenGL(bUseOpenGL),
+ParticleSystem::ParticleSystem(uint numParticles, uint3 gridSize) :
     m_numParticles(numParticles),
     m_hPos(0),
     m_hVel(0),
@@ -99,16 +85,9 @@ ParticleSystem::createVBO(uint size)
     return vbo;
 }
 
-inline float lerp(float a, float b, float t)
-{
-    return a + t*(b-a);
-}
-
 void
 ParticleSystem::_initialize(int numParticles)
 {
-    assert(!m_bInitialized);
-
     m_numParticles = numParticles;
 
     // allocate host storage
@@ -126,15 +105,8 @@ ParticleSystem::_initialize(int numParticles)
     // allocate GPU data
     unsigned int memSize = sizeof(float) * 4 * m_numParticles;
 
-    if (m_bUseOpenGL)
-    {
-        m_posVbo = createVBO(memSize);
-        registerGLBufferObject(m_posVbo, &m_cuda_posvbo_resource);
-    }
-    else
-    {
-        checkCudaErrors(cudaMalloc((void **)&m_cudaPosVBO, memSize)) ;
-    }
+    m_posVbo = createVBO(memSize);
+    registerGLBufferObject(m_posVbo, &m_cuda_posvbo_resource);
 
     allocateArray((void **)&m_dVel, memSize);
 
@@ -150,15 +122,11 @@ ParticleSystem::_initialize(int numParticles)
     sdkCreateTimer(&m_timer);
 
     setParameters(&m_params);
-
-    m_bInitialized = true;
 }
 
 void
 ParticleSystem::_finalize()
 {
-    assert(m_bInitialized);
-
     delete [] m_hPos;
     delete [] m_hVel;
     delete [] m_hCellStart;
@@ -181,18 +149,9 @@ ParticleSystem::_finalize()
 void
 ParticleSystem::update(float deltaTime)
 {
-    assert(m_bInitialized);
-
     float *dPos;
 
-    if (m_bUseOpenGL)
-    {
-        dPos = (float *) mapGLBufferObject(&m_cuda_posvbo_resource);
-    }
-    else
-    {
-        dPos = (float *) m_cudaPosVBO;
-    }
+    dPos = (float *) mapGLBufferObject(&m_cuda_posvbo_resource);
 
     // update constants
     setParameters(&m_params);
@@ -240,10 +199,7 @@ ParticleSystem::update(float deltaTime)
         m_numGridCells);
 
     // note: do unmap at end here to avoid unnecessary graphics/CUDA context switch
-    if (m_bUseOpenGL)
-    {
-        unmapGLBufferObject(m_cuda_posvbo_resource);
-    }
+    unmapGLBufferObject(m_cuda_posvbo_resource);
 }
 
 
@@ -252,9 +208,7 @@ ParticleSystem::dumpParticles()
 {
     uint start = 0;
     uint count = 16384;
-    // debug
-    copyArrayFromDevice(m_hPos, 0, &m_cuda_posvbo_resource, sizeof(float)*4*count);
-        
+    copyArrayFromDevice(m_hPos, 0, &m_cuda_posvbo_resource, sizeof(float)*4*count);        
     for (uint i=start; i<start+count; i++)
     {
 	xfile << m_hPos[i*4+0] << ":";
@@ -270,29 +224,21 @@ ParticleSystem::dumpParticles()
 void
 ParticleSystem::setArray(ParticleArray array, const float *data, int start, int count)
 {
-    assert(m_bInitialized);
-
+    // called once, one for each, pos and vel
     switch (array)
     {
         default:
         case POSITION:
-            {
-                if (m_bUseOpenGL)
-                {
-                    unregisterGLBufferObject(m_cuda_posvbo_resource);
-                    glBindBuffer(GL_ARRAY_BUFFER, m_posVbo);
-                    glBufferSubData(GL_ARRAY_BUFFER, start*4*sizeof(float), count*4*sizeof(float), data);
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-                    registerGLBufferObject(m_posVbo, &m_cuda_posvbo_resource);
-                }
-                else
-                {
-                    copyArrayToDevice(m_cudaPosVBO, data, start*4*sizeof(float), count*4*sizeof(float));
-                }
+            {		
+		unregisterGLBufferObject(m_cuda_posvbo_resource);
+		glBindBuffer(GL_ARRAY_BUFFER, m_posVbo);
+		glBufferSubData(GL_ARRAY_BUFFER, start*4*sizeof(float), count*4*sizeof(float), data);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		registerGLBufferObject(m_posVbo, &m_cuda_posvbo_resource);
             }
             break;
 
-        case VELOCITY:
+        case VELOCITY:	   
             copyArrayToDevice(m_dVel, data, start*4*sizeof(float), count*4*sizeof(float));
             break;
     }

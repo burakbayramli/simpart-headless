@@ -14,7 +14,7 @@
 class ParticleSystem
 {
 public:
-    ParticleSystem(uint numParticles, uint3 gridSize, bool bUseOpenGL);
+    ParticleSystem(uint numParticles, uint3 gridSize);
     
     ~ParticleSystem();
 
@@ -60,6 +60,7 @@ public:
     }
 
     void dumpParticles();
+
 
     void setDamping(float x)
     {
@@ -129,7 +130,6 @@ protected: // methods
     void initGrid(uint *size, float spacing, float jitter, uint numParticles);
 
 protected: // data
-    bool m_bInitialized, m_bUseOpenGL;
     uint m_numParticles;
 
     // CPU data
@@ -170,7 +170,6 @@ protected: // data
     uint m_numGridCells;
 
     StopWatchInterface *m_timer;
-
 };
 
 #endif // __PARTICLESYSTEM_H__
